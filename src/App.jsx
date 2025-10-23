@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import MessagesPage from './pages/MessagesPage';
 
 /**
@@ -45,8 +46,8 @@ function App() {
           <Route path="/messages/user/:userId" element={<MessagesPage />} />
           <Route path="/messages/room/:roomId" element={<MessagesPage />} />
           
-          {/* Route d'inscription (à implémenter) */}
-          <Route path="/register" element={<div>Page d'inscription à venir</div>} />
+          {/* Route d'inscription */}
+          <Route path="/register" element={<RegisterPage />} />
           
           {/* Route 404 */}
           <Route path="*" element={<Navigate to="/login" replace />} />
