@@ -22,6 +22,7 @@ import {
   Logout as LogoutIcon,
   Message as MessageIcon,
   Send as SendIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../store/authStore';
 import { useUsersStore } from '../store/usersStore';
@@ -29,9 +30,10 @@ import { useUsersStore } from '../store/usersStore';
 const MessagesPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { users, messages, loading, fetchUsers, sendMessage } = useUsersStore();
+  const { users, rooms, messages, loading, fetchUsers, fetchRooms, fetchMessages, sendMessage } = useUsersStore();
 
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -40,8 +42,24 @@ const MessagesPage = () => {
       navigate('/login');
     } else {
       fetchUsers();
+      fetchRooms();
     }
-  }, [isAuthenticated, navigate, fetchUsers]);
+  }, [isAuthenticated, navigate, fetchUsers, fetchRooms]);
+
+  useEffect(() => {
+    // Charger les messages quand un utilisateur est sélectionné
+    if (selectedUser) {
+      fetchMessages(selectedUser.user_id);
+
+      // Polling automatique toutes les 3 secondes
+      const interval = setInterval(() => {
+        fetchMessages(selectedUser.user_id);
+      }, 3000);
+
+      // Nettoyer l'interval quand on change d'utilisateur
+      return () => clearInterval(interval);
+    }
+  }, [selectedUser, fetchMessages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -56,17 +74,35 @@ const MessagesPage = () => {
     navigate('/login');
   };
 
-  const handleSelectUser = (selectedUser) => {
-    setSelectedUser(selectedUser);
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    setSelectedRoom(null); // Désélectionner le salon
+  };
+
+  const handleSelectRoom = (room) => {
+    setSelectedRoom(room);
+    setSelectedUser(null); // Désélectionner l'utilisateur
   };
 
   const handleSendMessage = async () => {
-    if (!selectedUser || !messageText.trim()) return;
+    if (!selectedUser || !messageText.trim()) {
+      console.log('❌ Pas d\'utilisateur sélectionné ou message vide');
+      return;
+    }
 
-    const result = await sendMessage(selectedUser.id, messageText.trim());
+    console.log('📤 Envoi du message à:', selectedUser.username, 'ID:', selectedUser.user_id);
+    console.log('💬 Contenu:', messageText.trim());
+
+    const result = await sendMessage(selectedUser.user_id, messageText.trim());
+
+    console.log('📥 Résultat:', result);
 
     if (result.success) {
+      console.log('✅ Message envoyé avec succès !');
       setMessageText('');
+    } else {
+      console.error('❌ Erreur lors de l\'envoi:', result.error);
+      alert('Erreur lors de l\'envoi du message: ' + result.error);
     }
   };
 
@@ -77,9 +113,15 @@ const MessagesPage = () => {
     }
   };
 
+  const handleRefreshMessages = () => {
+    if (selectedUser) {
+      fetchMessages(selectedUser.user_id);
+    }
+  };
+
   const getConversationMessages = () => {
     if (!selectedUser) return [];
-    return messages[selectedUser.id] || [];
+    return messages[selectedUser.user_id] || [];
   };
 
   const getInitials = (username) => {
@@ -119,7 +161,7 @@ const MessagesPage = () => {
           elevation={0}
         >
           <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6">Contacts</Typography>
+            <Typography variant="h6">Conversations</Typography>
           </Box>
 
           {loading ? (
@@ -128,10 +170,54 @@ const MessagesPage = () => {
             </Box>
           ) : (
             <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+              {/* Salons */}
+              {rooms.length > 0 && (
+                <>
+                  <ListItem>
+                    <Typography variant="caption" color="text.secondary" sx={{ pl: 2, fontWeight: 'bold' }}>
+                      SALONS
+                    </Typography>
+                  </ListItem>
+                  {rooms.map((room) => (
+                    <ListItem key={room.room_id} disablePadding>
+                      <ListItemButton
+                        selected={selectedRoom?.room_id === room.room_id}
+                        onClick={() => handleSelectRoom(room)}
+                        sx={{
+                          '&.Mui-selected': {
+                            backgroundColor: 'secondary.light',
+                            '&:hover': {
+                              backgroundColor: 'secondary.light',
+                            },
+                          },
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                            #
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={room.name}
+                          secondary="Salon de discussion"
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                  <Divider sx={{ my: 1 }} />
+                </>
+              )}
+
+              {/* Utilisateurs */}
+              <ListItem>
+                <Typography variant="caption" color="text.secondary" sx={{ pl: 2, fontWeight: 'bold' }}>
+                  MESSAGES PRIVÉS
+                </Typography>
+              </ListItem>
               {users.map((u) => (
-                <ListItem key={u.id} disablePadding>
+                <ListItem key={u.user_id} disablePadding>
                   <ListItemButton
-                    selected={selectedUser?.id === u.id}
+                    selected={selectedUser?.user_id === u.user_id}
                     onClick={() => handleSelectUser(u)}
                     sx={{
                       '&.Mui-selected': {
@@ -150,8 +236,8 @@ const MessagesPage = () => {
                     <ListItemText
                       primary={u.username}
                       secondary={
-                        messages[u.id]?.length
-                          ? `${messages[u.id].length} message(s)`
+                        messages[u.user_id]?.length
+                          ? `${messages[u.user_id].length} message(s)`
                           : 'Aucun message'
                       }
                     />
@@ -171,7 +257,7 @@ const MessagesPage = () => {
             backgroundColor: '#f5f5f5',
           }}
         >
-          {!selectedUser ? (
+          {!selectedUser && !selectedRoom ? (
             <Box
               sx={{
                 display: 'flex',
@@ -184,7 +270,7 @@ const MessagesPage = () => {
             >
               <MessageIcon sx={{ fontSize: 80, color: 'text.secondary' }} />
               <Typography variant="h5" color="text.secondary">
-                Selectionnez un contact pour commencer
+                Sélectionnez une conversation pour commencer
               </Typography>
             </Box>
           ) : (
@@ -199,11 +285,20 @@ const MessagesPage = () => {
                 }}
                 elevation={1}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                    {getInitials(selectedUser.username)}
-                  </Avatar>
-                  <Typography variant="h6">{selectedUser.username}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: selectedRoom ? 'secondary.main' : 'primary.main', mr: 2 }}>
+                      {selectedRoom ? '#' : getInitials(selectedUser?.username || '')}
+                    </Avatar>
+                    <Typography variant="h6">
+                      {selectedRoom ? `# ${selectedRoom.name}` : selectedUser?.username}
+                    </Typography>
+                  </Box>
+                  {selectedUser && (
+                    <IconButton onClick={handleRefreshMessages} color="primary" title="Rafraîchir les messages">
+                      <RefreshIcon />
+                    </IconButton>
+                  )}
                 </Box>
               </Paper>
 
@@ -232,11 +327,11 @@ const MessagesPage = () => {
                     </Typography>
                   </Box>
                 ) : (
-                  getConversationMessages().map((msg) => {
+                  getConversationMessages().map((msg, index) => {
                     const isSent = msg.senderId === user.id;
                     return (
                       <Box
-                        key={msg.id}
+                        key={msg.timestamp + index}
                         sx={{
                           display: 'flex',
                           justifyContent: isSent ? 'flex-end' : 'flex-start',

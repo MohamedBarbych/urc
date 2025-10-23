@@ -31,7 +31,15 @@ export default async function handler(request) {
             userInfo[user.id] = user;
             await redis.hset("users", userInfo);
 
-            return new Response(JSON.stringify({token: token, username: username, externalId: rows[0].external_id, id: rows[0].user_id}), {
+            return new Response(JSON.stringify({
+                token: token,
+                user: {
+                    id: rows[0].user_id,
+                    username: rows[0].username,
+                    email: rows[0].email,
+                    externalId: rows[0].external_id
+                }
+            }), {
                 status: 200,
                 headers: {'content-type': 'application/json'},
             });
