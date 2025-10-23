@@ -1,205 +1,195 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authStore';
 
-/**
- * Store Zustand pour la gestion des utilisateurs et des messages
- */
+// ✅ NOUVELLE FONCTION : Récupère le token depuis authStore directement
+const getAuthToken = () => {
+    const token = useAuthStore.getState().token;
+
+    if (!token) {
+        console.error('❌ Aucun token dans authStore');
+    } else {
+        console.log('✅ Token récupéré depuis authStore:', token.substring(0, 20) + '...');
+    }
+
+    return token;
+};
+
 export const useUsersStore = create((set, get) => ({
-  users: [],
-  rooms: [],
-  loading: false,
-  error: null,
-  messages: {},
-  roomMessages: {},
+    users: [],
+    rooms: [],
+    messages: {},
+    loading: false,
+    error: null,
 
-  fetchUsers: async () => {
-    set({ loading: true, error: null });
+    fetchUsers: async () => {
+        set({ loading: true, error: null });
+        try {
+            const token = getAuthToken();
 
-    try {
-      const token = useAuthStore.getState().token;
-        localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
+            if (!token) {
+                throw new Error('Non authentifié - pas de token');
+            }
 
-      const response = await fetch('/api/users', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authentication': `Bearer ${token}`,
-        },
-      });
+            console.log('🔍 Appel /api/users');
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Session expirée');
+            const response = await fetch('/api/users', {
+                method: 'GET',
+                headers: {
+                    'Authentication': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('📥 Réponse /api/users - Status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Erreur ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Utilisateurs reçus:', data);
+
+            const usersList = data.users || data.data || data || [];
+
+            set({ users: usersList, loading: false });
+        } catch (error) {
+            console.error('❌ Erreur fetchUsers:', error);
+            set({ error: error.message, loading: false, users: [] });
         }
-        throw new Error('Erreur lors de la récupération des utilisateurs');
-      }
+    },
 
-      const data = await response.json();
+    fetchRooms: async () => {
+        try {
+            const token = getAuthToken();
 
-      const currentUserId = useAuthStore.getState().user?.id;
-      const filteredUsers = data.filter(user => user.user_id !== currentUserId);
+            if (!token) {
+                set({ rooms: [] });
+                return;
+            }
 
-      set({
-        users: filteredUsers,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      set({
-        loading: false,
-        error: error.message,
-      });
-    }
-  },
+            const response = await fetch('/api/rooms', {
+                method: 'GET',
+                headers: {
+                    'Authentication': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-  fetchMessages: async (recipientId) => {
-    try {
-      const token = useAuthStore.getState().token;
+            if (!response.ok) {
+                set({ rooms: [] });
+                return;
+            }
 
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-
-      const response = await fetch(`/api/message?recipientId=${recipientId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authentication': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Session expirée');
+            const data = await response.json();
+            const roomsList = data.rooms || data.data || data || [];
+            set({ rooms: roomsList });
+        } catch (error) {
+            console.error('❌ Erreur fetchRooms:', error);
+            set({ rooms: [] });
         }
-        throw new Error('Erreur lors de la récupération des messages');
-      }
+    },
 
-      const data = await response.json();
-      const fetchedMessages = data.messages || [];
+    fetchMessages: async (recipientId) => {
+        if (!recipientId) return;
 
-      console.log('📦 Messages récupérés de Redis:', fetchedMessages.length);
+        try {
+            const token = getAuthToken();
 
-      const { messages } = get();
+            if (!token) {
+                throw new Error('Non authentifié');
+            }
 
-      // Ne mettre à jour que si on a vraiment des messages OU si c'est la première fois
-      const currentMessages = messages[recipientId] || [];
+            const response = await fetch(`/api/messages?recipientId=${recipientId}`, {
+                method: 'GET',
+                headers: {
+                    'Authentication': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-      // Toujours prendre les messages de Redis comme source de vérité
-      set({
-        messages: {
-          ...messages,
-          [recipientId]: fetchedMessages,
-        },
-      });
+            if (!response.ok) throw new Error(`Erreur ${response.status}`);
 
-      return { success: true, messages: fetchedMessages };
-    } catch (error) {
-      set({ error: error.message });
-      return { success: false, error: error.message };
-    }
-  },
+            const data = await response.json();
 
-  sendMessage: async (recipientId, content) => {
-    try {
-      const token = useAuthStore.getState().token;
-      const currentUser = useAuthStore.getState().user;
-
-      console.log('🔐 Token:', token ? 'Présent' : 'Absent');
-      console.log('👤 User:', currentUser);
-      console.log('📨 Envoi vers recipientId:', recipientId, 'content:', content);
-
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-
-      const response = await fetch('/api/message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authentication': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          recipientId,
-          content,
-        }),
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur serveur:', errorText);
-        throw new Error('Erreur lors de l\'envoi du message: ' + errorText);
-      }
-
-      const result = await response.json();
-      console.log('✅ Résultat serveur:', result);
-
-      const newMessage = result.data;
-
-      const { messages } = get();
-      const conversationMessages = messages[recipientId] || [];
-
-      set({
-        messages: {
-          ...messages,
-          [recipientId]: [...conversationMessages, newMessage],
-        },
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('💥 Exception dans sendMessage:', error);
-      set({ error: error.message });
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchRooms: async () => {
-    set({ loading: true, error: null });
-
-    try {
-      const token = useAuthStore.getState().token;
-
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-
-      const response = await fetch('/api/rooms', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authentication': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Session expirée');
+            if (data.success) {
+                set((state) => ({
+                    messages: {
+                        ...state.messages,
+                        [recipientId]: data.messages || []
+                    }
+                }));
+            }
+        } catch (error) {
+            console.error('❌ Erreur fetchMessages:', error);
+            set((state) => ({
+                messages: {
+                    ...state.messages,
+                    [recipientId]: []
+                }
+            }));
         }
-        throw new Error('Erreur lors de la récupération des salons');
-      }
+    },
 
-      const data = await response.json();
+    sendMessage: async (recipientId, content) => {
+        if (!recipientId || !content) {
+            return { success: false, error: 'Données manquantes' };
+        }
 
-      set({
-        rooms: data,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      set({
-        loading: false,
-        error: error.message,
-      });
+        try {
+            const token = getAuthToken();
+
+            if (!token) {
+                return { success: false, error: 'Non authentifié' };
+            }
+
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                    'Authentication': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    recipientId: parseInt(recipientId),
+                    content: content.trim(),
+                    type: 'text'
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erreur envoi');
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                setTimeout(() => get().fetchMessages(recipientId), 500);
+                return { success: true, data: data.data };
+            }
+
+            return { success: false, error: 'Échec envoi' };
+        } catch (error) {
+            console.error('❌ Erreur sendMessage:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    clearMessages: (userId) => {
+        set((state) => {
+            const newMessages = { ...state.messages };
+            delete newMessages[userId];
+            return { messages: newMessages };
+        });
+    },
+
+    reset: () => {
+        set({
+            users: [],
+            rooms: [],
+            messages: {},
+            loading: false,
+            error: null
+        });
     }
-  },
-
-  clearError: () => set({ error: null }),
 }));
-
-export default useUsersStore;

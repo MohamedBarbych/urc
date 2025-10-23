@@ -108,7 +108,7 @@ const RegisterPage = () => {
                 fullWidth label="Nom d'utilisateur" name="username"
                 value={formData.username} onChange={handleChange}
                 margin="normal" variant="outlined" required
-                autoComplete="username" autoFocus disabled={loading}
+                autoComplete="username"  disabled={loading}
                 helperText="Choisissez un nom d'utilisateur unique"
               />
 

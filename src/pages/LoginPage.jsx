@@ -1,148 +1,94 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box, Card, CardContent, TextField, Button, Typography,
-  Alert, CircularProgress, Container, InputAdornment, IconButton, Link,
-} from '@mui/material';
-import {
-  Visibility, VisibilityOff, Login as LoginIcon, Message as MessageIcon,
-} from '@mui/icons-material';
 import { useAuthStore } from '../store/authStore';
+import {
+    Box,
+    TextField,
+    Button,
+    Typography,
+    Container,
+    Paper,
+    Alert,
+} from '@mui/material';
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, loading, error, login, clearError } = useAuthStore();
+    const navigate = useNavigate();
+    const { login, loading, error } = useAuthStore();
+    const [credentials, setCredentials] = useState({
+        username: '',
+        password: '',
+    });
 
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-  useEffect(() => {
-    if (isAuthenticated) navigate('/messages');
-  }, [isAuthenticated, navigate]);
+        const result = await login(credentials.username, credentials.password);
 
-  useEffect(() => {
-    return () => clearError();
-  }, [clearError]);
+        if (result.success) {
+            // ✅ Redirection immédiate, le store s'occupe du reste
+            navigate('/messages');
+        }
+    };
 
-  const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
-  };
-
-
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  clearError();
-  
-  if (!credentials.username || !credentials.password) return;
-  
-  console.log('📤 Envoi des credentials:', credentials);
-  
-  const result = await login(credentials.username, credentials.password);
-  
-  // ✅ AJOUTER CES LOGS
-  console.log('📥 Résultat du login:', result);
-  
-  // Afficher le token et les infos utilisateur
-  const { token, user } = useAuthStore.getState();
-  console.log('🔐 Token stocké:', token);
-  console.log('👤 Utilisateur:', user);
-  
-  if (result.success) {
-    console.log('✅ Connexion réussie, redirection vers /messages');
-    navigate('/messages');
-  } else {
-    console.error('❌ Connexion échouée:', result.error);
-  }
- };
-  
-
-  const handleTogglePassword = () => setShowPassword(!showPassword);
-
-  return (
-    <Box sx={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: 2,
-    }}>
-      <Container maxWidth="sm">
-        <Card elevation={24} sx={{ borderRadius: 4, overflow: 'hidden' }}>
-          <Box sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            padding: 4, textAlign: 'center', color: 'white',
-          }}>
-            <MessageIcon sx={{ fontSize: 60, mb: 2 }} />
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
-              URC Messaging
-            </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.9 }}>
-              Connexion à votre espace de messagerie
-            </Typography>
-          </Box>
-
-          <CardContent sx={{ padding: 4 }}>
-            <form onSubmit={handleSubmit}>
-              {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-             <TextField
-              fullWidth label="Nom d'utilisateur" name="username"
-              value={credentials.username} onChange={handleChange}
-              margin="normal" variant="outlined" required
-              autoComplete="username" autoFocus disabled={loading}
-            />
-
-
-              <TextField
-                fullWidth label="Mot de passe" name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={credentials.password} onChange={handleChange}
-                margin="normal" variant="outlined" required
-                autoComplete="current-password" disabled={loading}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={handleTogglePassword} edge="end" disabled={loading}>
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <Button
-                type="submit" fullWidth variant="contained" size="large" disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : <LoginIcon />}
+    return (
+        <Container maxWidth="sm">
+            <Box
                 sx={{
-                  mt: 3, mb: 2, py: 1.5,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': { background: 'linear-gradient(135deg, #5568d3 0%, #6941a0 100%)' },
+                    marginTop: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                 }}
-              >
-                {loading ? 'Connexion en cours...' : 'Se connecter'}
-              </Button>
+            >
+                <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+                    <Typography component="h1" variant="h5" textAlign="center" mb={3}>
+                        URC Messaging - Connexion
+                    </Typography>
 
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Pas encore de compte ?{' '}
-                  <Link href="/register" sx={{
-                    color: '#667eea', textDecoration: 'none', fontWeight: 600,
-                    '&:hover': { textDecoration: 'underline' },
-                  }}>
-                    S'inscrire
-                  </Link>
-                </Typography>
-              </Box>
-            </form>
-          </CardContent>
-        </Card>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>
-            © 2025 URC Messaging - TP Développement Web
-          </Typography>
-        </Box>
-      </Container>
-    </Box>
-  );
+                    <Box component="form" onSubmit={handleSubmit}>
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            label="Nom d'utilisateur"
+                            autoComplete="username"
+                            value={credentials.username}
+                            onChange={(e) =>
+                                setCredentials({ ...credentials, username: e.target.value })
+                            }
+                        />
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            label="Mot de passe"
+                            type="password"
+                            autoComplete="current-password"
+                            value={credentials.password}
+                            onChange={(e) =>
+                                setCredentials({ ...credentials, password: e.target.value })
+                            }
+                        />
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            sx={{ mt: 3, mb: 2 }}
+                            disabled={loading}
+                        >
+                            {loading ? 'Connexion...' : 'Se connecter'}
+                        </Button>
+                    </Box>
+                </Paper>
+            </Box>
+        </Container>
+    );
 };
 
 export default LoginPage;
