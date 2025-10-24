@@ -25,7 +25,7 @@ const LoginPage = () => {
         const result = await login(credentials.username, credentials.password);
 
         if (result.success) {
-            // ✅ Redirection immédiate, le store s'occupe du reste
+            // Redirection immédiate, le store s'occupe du reste
             navigate('/messages');
         }
     };
@@ -84,7 +84,14 @@ const LoginPage = () => {
                         >
                             {loading ? 'Connexion...' : 'Se connecter'}
                         </Button>
-                    </Box>
+                        </Box>
+
+                <Typography variant="body2" color="text.secondary" textAlign="center">
+                        Pas encore de compte ?{' '}
+                        <a href="/register" style={{ color: '#007bff', textDecoration: 'none' }}>
+                            S'inscrire
+                        </a>
+                    </Typography>
                 </Paper>
             </Box>
         </Container>

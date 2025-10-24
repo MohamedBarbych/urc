@@ -1,9 +1,13 @@
 import { checkSession, unauthorizedResponse } from "../lib/session.js";
 import { Redis } from '@upstash/redis';
 
+
+
+
 export const config = {
     runtime: 'edge',
 };
+
 
 const redis = Redis.fromEnv();
 
