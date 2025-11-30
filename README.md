@@ -1,7 +1,7 @@
 # Application de Messagerie en Temps Réel - URC
 
 **Étudiant:** BARBYCH Mohamed  
-**Formation:** Master Informatique - Université de Bretagne Occidentale  
+**Formation:** Master DOSI - Université de Bretagne Occidentale  
 **Année universitaire:** 2024-2025
 
 ---
