@@ -1,0 +1,23 @@
+# Dockerfile pour le développement avec Vercel Dev
+FROM node:18-alpine
+
+# J'installe Vercel CLI globalement
+RUN npm install -g vercel
+
+# Je configure le répertoire de travail
+WORKDIR /app
+
+# Je copie les fichiers de dépendances
+COPY package*.json ./
+
+# J'installe toutes les dépendances (dev + prod)
+RUN npm install
+
+# Je copie tout le code source
+COPY . .
+
+# J'expose les ports pour React (3000) et Vercel Dev (3001)
+EXPOSE 3000 3001
+
+# Je lance Vercel Dev
+CMD ["vercel", "dev", "--listen", "3000"]

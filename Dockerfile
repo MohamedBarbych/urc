@@ -10,8 +10,8 @@ COPY . .
 
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 3000 3001
 
-RUN npm install -g serve
+RUN npm install -g serve concurrently
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["sh", "-c", "concurrently \"serve -s build -l 3000\" \"node server.js\""]

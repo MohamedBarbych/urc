@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+const API_URL = window.API_BASE_URL || '';
+
 /**
  * Store de gestion des utilisateurs et messages
  * Je gère les listes d'utilisateurs, les salons et les messages
@@ -20,7 +22,7 @@ export const useUsersStore = create((set, get) => ({
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/users', {
+            const response = await fetch(`${API_URL}/api/users`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -44,7 +46,7 @@ export const useUsersStore = create((set, get) => ({
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/rooms', {
+            const response = await fetch(`${API_URL}/api/rooms`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -66,7 +68,7 @@ export const useUsersStore = create((set, get) => ({
     fetchMessages: async (userId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/messages?userId=${userId}`, {
+            const response = await fetch(`${API_URL}/api/messages?userId=${userId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -91,7 +93,7 @@ export const useUsersStore = create((set, get) => ({
     fetchRoomMessages: async (roomId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/room-messages?roomId=${roomId}`, {
+            const response = await fetch(`${API_URL}/api/room-messages?roomId=${roomId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -116,7 +118,7 @@ export const useUsersStore = create((set, get) => ({
     sendMessage: async (userId, content) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/messages', {
+            const response = await fetch(`${API_URL}/api/messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -141,7 +143,7 @@ export const useUsersStore = create((set, get) => ({
     sendRoomMessage: async (roomId, content) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/room-messages', {
+            const response = await fetch(`${API_URL}/api/room-messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+const API_URL = window.API_BASE_URL || '';
+
 /**
  * Store d'authentification
  * Je gère la connexion, l'inscription et la session utilisateur
@@ -17,7 +19,7 @@ export const useAuthStore = create((set, get) => ({
         set({ loading: true, error: null });
 
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
@@ -54,7 +56,7 @@ export const useAuthStore = create((set, get) => ({
         set({ loading: true, error: null });
 
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch(`${API_URL}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
