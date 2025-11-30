@@ -43,11 +43,7 @@ const RegisterPage = () => {
     clearError();
     setPasswordError('');
 
-    // Validation
-    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
-      return;
-    }
-
+    // Validation - Les champs sont automatiquement validés par l'attribut "required" du HTML
     if (formData.password !== formData.confirmPassword) {
       setPasswordError('Les mots de passe ne correspondent pas');
       return;
