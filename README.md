@@ -459,5 +459,5 @@ Ce projet démontre la maîtrise de l'ensemble de la stack JavaScript moderne, d
 ---
 
 **BARBYCH Mohamed**  
-Master Informatique - UBO  
+Master DOSI - UBO  
 GitHub: [@MohamedBarbych](https://github.com/MohamedBarbych)
