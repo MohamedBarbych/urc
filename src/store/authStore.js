@@ -52,14 +52,14 @@ export const useAuthStore = create((set, get) => ({
     /**
      * Je gère l'inscription d'un nouvel utilisateur
      */
-    register: async (username, password) => {
+    register: async (username, email, password) => {
         set({ loading: true, error: null });
 
         try {
             const response = await fetch(`${API_URL}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username, email, password }),
             });
 
             const data = await response.json();
