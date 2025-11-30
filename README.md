@@ -378,33 +378,6 @@ git push origin main
 
 ---
 
-## 📈 Améliorations futures possibles
-
-### Fonctionnalités
-- [ ] Notifications push en temps réel (WebSockets)
-- [ ] Envoi de fichiers et images
-- [ ] Emojis et réactions aux messages
-- [ ] Création de salons personnalisés par les utilisateurs
-- [ ] Modération des salons (admins, bannissement)
-- [ ] Recherche dans l'historique des messages
-- [ ] Statut en ligne/hors ligne des utilisateurs
-
-### Technique
-- [ ] Migration vers WebSockets (Socket.io) au lieu du polling
-- [ ] Compression des messages (gzip)
-- [ ] Pagination de l'historique des messages
-- [ ] Cache côté client (Service Worker)
-- [ ] Tests unitaires et d'intégration (Jest, React Testing Library)
-- [ ] CI/CD avec GitHub Actions
-
-### Interface
-- [ ] Mode sombre/clair
-- [ ] Thèmes personnalisables
-- [ ] Accessibilité WCAG 2.1 niveau AA
-- [ ] Version mobile native (React Native)
-
----
-
 ## 🐛 Dépannage
 
 ### Le conteneur ne démarre pas
