@@ -124,7 +124,7 @@ export const useUsersStore = create((set, get) => ({
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ userId, content }),
+                body: JSON.stringify({ receiverId: userId, content }),
             });
 
             const data = await response.json();
@@ -132,8 +132,11 @@ export const useUsersStore = create((set, get) => ({
             if (data.success) {
                 get().fetchMessages(userId);
             }
+
+            return data;
         } catch (error) {
             console.error('Erreur sendMessage:', error);
+            return { success: false, error: error.message };
         }
     },
 
@@ -157,8 +160,11 @@ export const useUsersStore = create((set, get) => ({
             if (data.success) {
                 get().fetchRoomMessages(roomId);
             }
+
+            return data;
         } catch (error) {
             console.error('Erreur sendRoomMessage:', error);
+            return { success: false, error: error.message };
         }
     },
 }));

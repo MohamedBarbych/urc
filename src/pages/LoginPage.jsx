@@ -21,12 +21,17 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('📝 FORM SUBMIT');
 
         const result = await login(credentials.username, credentials.password);
+        console.log('📝 RESULT:', result);
 
         if (result.success) {
+            console.log('📝 NAVIGATION vers /messages');
             // Redirection immédiate, le store s'occupe du reste
             navigate('/messages');
+        } else {
+            console.log('📝 PAS DE NAVIGATION - success =', result.success);
         }
     };
 

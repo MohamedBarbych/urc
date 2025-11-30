@@ -85,7 +85,9 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/users', verifySession, async (req, res) => {
   try {
     const allUsers = await redis.hgetall('users');
-    const users = Object.values(allUsers || {}).filter(u => u.id !== req.user.id);
+    const users = Object.values(allUsers || {})
+      .filter(u => u.id !== req.user.id)
+      .map(u => ({ ...u, user_id: u.id })); // Ajouter user_id pour compatibilité frontend
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -96,9 +98,10 @@ app.get('/api/rooms', verifySession, async (req, res) => {
   const client = createClient();
   try {
     await client.connect();
-    const result = await client.sql`SELECT room_id as id, name, description FROM rooms ORDER BY name`;
+    const result = await client.sql`SELECT room_id as id, name FROM rooms ORDER BY name`;
     await client.end();
-    res.json({ success: true, rooms: result.rows });
+    const rooms = result.rows.map(r => ({ ...r, room_id: r.id })); // Ajouter room_id pour compatibilité
+    res.json({ success: true, rooms });
   } catch (error) {
     try { await client.end(); } catch {}
     res.status(500).json({ success: false, message: error.message });
