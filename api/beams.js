@@ -2,6 +2,7 @@ import { checkSession, unauthorizedResponse } from "../lib/session.js";
 import { Redis } from '@upstash/redis';
 import PushNotifications from "@pusher/push-notifications-server";
 
+
 export const config = {
     runtime: 'edge',
 };
@@ -42,7 +43,7 @@ export default async function handler(request) {
             return new Response(JSON.stringify({
                 error: 'User not found'
             }), {
-                status: 401,
+                status: 401,build
                 headers: { 'content-type': 'application/json' }
             });
         }

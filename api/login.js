@@ -8,12 +8,15 @@ export const config = {
 
 const redis = Redis.fromEnv();
 
+/**
+ * Gestionnaire de connexion utilisateur
+ * Je gère l'authentification et la création de sessions
+ */
 export default async function handler(request) {
     try {
         const { username, password } = await request.json();
 
-        console.log(`🔐 Tentative de connexion: ${username}`);
-
+        // Je hash le mot de passe pour la comparaison
         const hash = await crypto.subtle.digest('SHA-256', stringToArrayBuffer(username + password));
         const hashed64 = arrayBufferToBase64(hash);
 
@@ -24,7 +27,6 @@ export default async function handler(request) {
         `;
 
         if (rowCount !== 1) {
-            console.log('❌ Identifiants invalides');
             return new Response(JSON.stringify({
                 success: false,
                 code: "UNAUTHORIZED",
@@ -35,14 +37,14 @@ export default async function handler(request) {
             });
         }
 
-        // Mise à jour last_login
+        // Je mets à jour la date de dernière connexion
         await client.sql`
             UPDATE users
             SET last_login = now()
             WHERE user_id = ${rows[0].user_id}
         `;
 
-        // Génération du token
+        // Je génère un token de session
         const token = crypto.randomUUID().toString();
 
         const user = {
@@ -52,22 +54,16 @@ export default async function handler(request) {
             externalId: rows[0].external_id
         };
 
-        console.log(`✅ User trouvé: ${user.username} (ID: ${user.id})`);
-        console.log(`🎫 Token généré: ${token}`);
+        // Je stocke le token dans Redis avec expiration de 24 heures
+        await redis.set(token, user, { ex: 86400 });
 
-        // Stocker dans Redis (token -> user)
-        await redis.set(token, user, { ex: 86400 }); // 24h au lieu de 1h
-
-        // Stocker aussi dans le hash users
+        // Je stocke également dans le hash users
         const userInfo = {};
         userInfo[user.id] = user;
         await redis.hset("users", userInfo);
 
-        console.log(`💾 Token stocké dans Redis`);
-
-        // IMPORTANT : Retourner avec success: true
         return new Response(JSON.stringify({
-            success: true,      // ← AJOUTÉ
+            success: true,
             token: token,
             user: user
         }), {
@@ -76,7 +72,6 @@ export default async function handler(request) {
         });
 
     } catch (error) {
-        console.error('❌ Erreur login:', error);
         return new Response(JSON.stringify({
             success: false,
             error: error.message

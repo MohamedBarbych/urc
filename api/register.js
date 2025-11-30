@@ -8,11 +8,14 @@ export const config = {
 
 const redis = Redis.fromEnv();
 
+/**
+ * Gestionnaire d'inscription utilisateur
+ * Je gère la création de nouveaux comptes utilisateurs avec validation et stockage sécurisé
+ */
 export default async function handler(request) {
     try {
         const { username, email, password } = await request.json();
 
-        // Validation des données
         if (!username || !email || !password) {
             return new Response(JSON.stringify({
                 code: "INVALID_DATA",
@@ -23,13 +26,13 @@ export default async function handler(request) {
             });
         }
 
-        // Hash du mot de passe
+        // Je hash le mot de passe avec SHA-256
         const hash = await crypto.subtle.digest('SHA-256', stringToArrayBuffer(username + password));
         const hashed64 = arrayBufferToBase64(hash);
 
         const client = await db.connect();
 
-        // Vérifier si l'utilisateur existe déjà
+        // Je vérifie si l'utilisateur existe déjà
         const { rowCount: existingUsers } = await client.sql`
             select * from users where username = ${username} or email = ${email}
         `;
@@ -44,10 +47,9 @@ export default async function handler(request) {
             });
         }
 
-        // Créer un external_id pour Pusher Beams
         const externalId = crypto.randomUUID().toString();
 
-        // Insérer le nouvel utilisateur
+        // J'insère le nouvel utilisateur dans la base de données
         const { rows } = await client.sql`
             insert into users (username, email, password, external_id, last_login, created_on)
             values (${username}, ${email}, ${hashed64}, ${externalId}, now(), now())
@@ -60,7 +62,7 @@ export default async function handler(request) {
 
         const newUser = rows[0];
 
-        // Créer un token de session
+        // Je crée un token de session
         const token = crypto.randomUUID().toString();
         const user = {
             id: newUser.user_id,
@@ -69,15 +71,16 @@ export default async function handler(request) {
             externalId: newUser.external_id
         };
 
-        // Stocker le token dans Redis
+        // Je stocke le token dans Redis avec expiration de 1 heure
         await redis.set(token, user, { ex: 3600 });
 
-        // Ajouter l'utilisateur à la liste des utilisateurs dans Redis
+        // J'ajoute l'utilisateur à la liste des utilisateurs dans Redis
         const userInfo = {};
         userInfo[user.id] = user;
         await redis.hset("users", userInfo);
 
         return new Response(JSON.stringify({
+            success: true,
             token: token,
             user: {
                 id: newUser.user_id,
@@ -90,7 +93,6 @@ export default async function handler(request) {
         });
 
     } catch (error) {
-        console.log(error);
         return new Response(JSON.stringify({
             code: "INTERNAL_ERROR",
             message: error.message || "Erreur lors de l'inscription"

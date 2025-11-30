@@ -1,42 +1,47 @@
-import { sql } from "@vercel/postgres";
-import { checkSession, unauthorizedResponse } from "../lib/session.js";
+import { db } from '@vercel/postgres';
+import { verifySession } from '../lib/session';
 
 export const config = {
     runtime: 'edge',
 };
 
+/**
+ * Gestionnaire de salons de discussion
+ * Je récupère la liste des salons disponibles
+ */
 export default async function handler(request) {
-    try {
-        const connected = await checkSession(request);
-        if (!connected) {
-            console.log("Not connected");
-            return unauthorizedResponse();
-        }
+    const session = await verifySession(request);
+    if (!session) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Non autorisé'
+        }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
 
-        const { rowCount, rows } = await sql`
-            SELECT room_id, name, created_on, created_by
-            FROM rooms
-            ORDER BY name ASC
+    try {
+        const client = await db.connect();
+        const { rows } = await client.sql`
+            SELECT id, name, description 
+            FROM rooms 
+            ORDER BY name
         `;
 
-        console.log("Got " + rowCount + " rooms");
-
-        if (rowCount === 0) {
-            return new Response("[]", {
-                status: 200,
-                headers: { 'content-type': 'application/json' },
-            });
-        } else {
-            return new Response(JSON.stringify(rows), {
-                status: 200,
-                headers: { 'content-type': 'application/json' },
-            });
-        }
+        return new Response(JSON.stringify({
+            success: true,
+            rooms: rows
+        }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
     } catch (error) {
-        console.log(error);
-        return new Response(JSON.stringify(error), {
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Erreur serveur'
+        }), {
             status: 500,
-            headers: { 'content-type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' }
         });
     }
 }

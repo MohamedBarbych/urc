@@ -1,134 +1,115 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 /**
- * Store Zustand pour l'authentification
- * Beaucoup plus simple que Redux Toolkit !
+ * Store d'authentification
+ * Je gère la connexion, l'inscription et la session utilisateur
  */
-export const useAuthStore = create(
-  persist(
-    (set, get) => ({
-      // État
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      loading: false,
-      error: null,
+export const useAuthStore = create((set, get) => ({
+    user: null,
+    token: null,
+    loading: false,
+    error: null,
 
-      // Actions
-      login: async (username, password) => {
+    /**
+     * Je gère la connexion d'un utilisateur
+     */
+    login: async (username, password) => {
         set({ loading: true, error: null });
 
         try {
-          const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password }),
-          });
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
 
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || 'Erreur de connexion');
-          }
+            const data = await response.json();
 
-          const data = await response.json();
+            if (data.success) {
+                set({
+                    user: data.user,
+                    token: data.token,
+                    loading: false,
+                    error: null,
+                });
 
-          set({
-            user: data.user,
-            token: data.token,
-            isAuthenticated: true,
-            loading: false,
-            error: null,
-          });
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
 
-          return { success: true };
+                return { success: true };
+            } else {
+                set({ loading: false, error: data.message });
+                return { success: false, error: data.message };
+            }
         } catch (error) {
-          set({
-            loading: false,
-            error: error.message || 'Erreur réseau',
-            isAuthenticated: false,
-          });
-          return { success: false, error: error.message };
+            set({ loading: false, error: 'Erreur de connexion' });
+            return { success: false, error: 'Erreur de connexion' };
         }
-      },
+    },
 
-      register: async (username, email, password) => {
+    /**
+     * Je gère l'inscription d'un nouvel utilisateur
+     */
+    register: async (username, password) => {
         set({ loading: true, error: null });
 
         try {
-          const response = await fetch('/api/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, email, password }),
-          });
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
 
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || 'Erreur d\'inscription');
-          }
+            const data = await response.json();
 
-          const data = await response.json();
+            if (data.success) {
+                set({
+                    user: data.user,
+                    token: data.token,
+                    loading: false,
+                    error: null,
+                });
 
-          set({
-            user: data.user,
-            token: data.token,
-            isAuthenticated: true,
-            loading: false,
-            error: null,
-          });
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
 
-          return { success: true };
+                return { success: true };
+            } else {
+                set({ loading: false, error: data.message });
+                return { success: false, error: data.message };
+            }
         } catch (error) {
-          set({
-            loading: false,
-            error: error.message || 'Erreur réseau',
-            isAuthenticated: false,
-          });
-          return { success: false, error: error.message };
+            set({ loading: false, error: 'Erreur d\'inscription' });
+            return { success: false, error: 'Erreur d\'inscription' };
         }
-      },
+    },
 
-      logout: async () => {
-        set({ loading: true });
+    /**
+     * Je déconnecte l'utilisateur
+     */
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        set({ user: null, token: null, error: null });
+    },
 
-        try {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            loading: false,
-            error: null,
-          });
+    /**
+     * Je nettoie les erreurs
+     */
+    clearError: () => set({ error: null }),
 
-          return { success: true };
-        } catch (error) {
-          set({ loading: false, error: error.message });
-          return { success: false, error: error.message };
-        }
-      },
+    /**
+     * Je restaure la session depuis localStorage
+     */
+    restoreSession: () => {
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
 
-      clearError: () => set({ error: null }),
-
-      restoreSession: () => {
-        const { token, user } = get();
         if (token && user) {
-          set({ isAuthenticated: true });
+            set({
+                token,
+                user: JSON.parse(user),
+            });
         }
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
-);
-
-export default useAuthStore;
+    },
+}));

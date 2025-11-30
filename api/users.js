@@ -1,5 +1,5 @@
-import { checkSession, unauthorizedResponse } from "../lib/session.js";
 import { Redis } from '@upstash/redis';
+import { verifySession } from '../lib/session';
 
 export const config = {
     runtime: 'edge',
@@ -7,72 +7,41 @@ export const config = {
 
 const redis = Redis.fromEnv();
 
+/**
+ * Gestionnaire de liste d'utilisateurs
+ * Je récupère tous les utilisateurs disponibles pour la messagerie
+ */
 export default async function handler(request) {
+    const session = await verifySession(request);
+    if (!session) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Non autorisé'
+        }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     try {
-        // Vérifier la session
-        const connected = await checkSession(request);
-        if (!connected) {
-            console.log("❌ Session non valide pour /api/users");
-            return unauthorizedResponse();
-        }
-
-        // Récupérer l'utilisateur connecté
-        let token = new Headers(request.headers).get('Authentication');
-        if (token) {
-            token = token.replace("Bearer ", "");
-        }
-
-        const currentUser = await redis.get(token);
-        if (!currentUser) {
-            console.log("❌ Token invalide pour /api/users");
-            return unauthorizedResponse();
-        }
-
-        console.log(`✅ User authentifié: ${currentUser.username} (ID: ${currentUser.id})`);
-
-        // Récupérer tous les utilisateurs du hash 'users'
-        const usersHash = await redis.hgetall('users');
-        console.log(`📋 Utilisateurs dans Redis:`, usersHash);
-
-        const users = [];
-
-        if (usersHash && typeof usersHash === 'object') {
-            // Transformer le hash en tableau d'utilisateurs
-            for (const [userId, userData] of Object.entries(usersHash)) {
-                const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
-
-                // ✅ FILTRER : Exclure l'utilisateur connecté
-                if (user.id !== currentUser.id) {
-                    users.push({
-                        user_id: user.id,
-                        username: user.username,
-                        email: user.email
-                    });
-                }
-            }
-        }
-
-        console.log(`✅ ${users.length} utilisateurs retournés (${currentUser.username} exclu)`);
+        const allUsers = await redis.hgetall('users');
+        
+        const users = Object.values(allUsers || {})
+            .filter(user => user.id !== session.userId);
 
         return new Response(JSON.stringify({
             success: true,
             users: users
         }), {
-            status: 200,
-            headers: {
-                'content-type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            headers: { 'Content-Type': 'application/json' }
         });
-
     } catch (error) {
-        console.error("❌ Erreur /api/users:", error);
         return new Response(JSON.stringify({
             success: false,
-            error: error.message
+            message: 'Erreur serveur'
         }), {
             status: 500,
-            headers: { 'content-type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' }
         });
     }
 }

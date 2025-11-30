@@ -30,7 +30,19 @@ import { useUsersStore } from '../store/usersStore';
 const MessagesPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { users, rooms, messages, loading, fetchUsers, fetchRooms, fetchMessages, sendMessage } = useUsersStore();
+  const {
+    users,
+    rooms,
+    messages,
+    roomMessages,
+    loading,
+    fetchUsers,
+    fetchRooms,
+    fetchMessages,
+    sendMessage,
+    fetchRoomMessages,
+    sendRoomMessage,
+  } = useUsersStore();
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -59,7 +71,20 @@ const MessagesPage = () => {
       // Nettoyer l'interval quand on change d'utilisateur
       return () => clearInterval(interval);
     }
-  }, [selectedUser, fetchMessages]);
+
+    // Charger les messages quand un salon est sélectionné
+    if (selectedRoom) {
+      fetchRoomMessages(selectedRoom.room_id);
+
+      // Polling automatique toutes les 3 secondes
+      const interval = setInterval(() => {
+        fetchRoomMessages(selectedRoom.room_id);
+      }, 3000);
+
+      // Nettoyer l'interval quand on change de salon
+      return () => clearInterval(interval);
+    }
+  }, [selectedUser, selectedRoom, fetchMessages, fetchRoomMessages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -85,24 +110,34 @@ const MessagesPage = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedUser || !messageText.trim()) {
-      console.log('❌ Pas d\'utilisateur sélectionné ou message vide');
-      return;
+    // Envoi vers un utilisateur
+    if (selectedUser && !selectedRoom) {
+      if (!messageText.trim()) {
+        return;
+      }
+
+      const result = await sendMessage(selectedUser.user_id, messageText.trim());
+
+      if (result.success) {
+        setMessageText('');
+      } else {
+        alert('Erreur lors de l\'envoi du message: ' + result.error);
+      }
     }
 
-    console.log('📤 Envoi du message à:', selectedUser.username, 'ID:', selectedUser.user_id);
-    console.log('💬 Contenu:', messageText.trim());
+    // Envoi vers un salon
+    if (selectedRoom && !selectedUser) {
+      if (!messageText.trim()) {
+        return;
+      }
 
-    const result = await sendMessage(selectedUser.user_id, messageText.trim());
+      const result = await sendRoomMessage(selectedRoom.room_id, messageText.trim());
 
-    console.log('📥 Résultat:', result);
-
-    if (result.success) {
-      console.log('✅ Message envoyé avec succès !');
-      setMessageText('');
-    } else {
-      console.error('❌ Erreur lors de l\'envoi:', result.error);
-      alert('Erreur lors de l\'envoi du message: ' + result.error);
+      if (result.success) {
+        setMessageText('');
+      } else {
+        alert('Erreur lors de l\'envoi du message au salon: ' + result.error);
+      }
     }
   };
 
@@ -117,11 +152,19 @@ const MessagesPage = () => {
     if (selectedUser) {
       fetchMessages(selectedUser.user_id);
     }
+    if (selectedRoom) {
+      fetchRoomMessages(selectedRoom.room_id);
+    }
   };
 
   const getConversationMessages = () => {
-    if (!selectedUser) return [];
-    return messages[selectedUser.user_id] || [];
+    if (selectedUser) {
+      return messages[selectedUser.user_id] || [];
+    }
+    if (selectedRoom) {
+      return roomMessages[selectedRoom.room_id] || [];
+    }
+    return [];
   };
 
   const getInitials = (username) => {
@@ -299,6 +342,11 @@ const MessagesPage = () => {
                       <RefreshIcon />
                     </IconButton>
                   )}
+                  {selectedRoom && (
+                    <IconButton onClick={handleRefreshMessages} color="primary" title="Rafraîchir les messages">
+                      <RefreshIcon />
+                    </IconButton>
+                  )}
                 </Box>
               </Paper>
 
@@ -389,13 +437,13 @@ const MessagesPage = () => {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    disabled={!selectedUser}
+                    disabled={!selectedUser && !selectedRoom}
                   />
                   <Button
                     variant="contained"
                     endIcon={<SendIcon />}
                     onClick={handleSendMessage}
-                    disabled={!selectedUser || !messageText.trim()}
+                    disabled={(!selectedUser && !selectedRoom) || !messageText.trim()}
                     sx={{ minWidth: 100 }}
                   >
                     Envoyer

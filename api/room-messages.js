@@ -8,8 +8,8 @@ export const config = {
 const redis = Redis.fromEnv();
 
 /**
- * Gestionnaire de messages privés
- * Je gère l'envoi et la récupération des messages entre utilisateurs
+ * Gestionnaire de messages de salon
+ * Je gère l'envoi et la récupération des messages dans les salons
  */
 export default async function handler(request) {
     const session = await verifySession(request);
@@ -27,44 +27,33 @@ export default async function handler(request) {
 
     if (method === 'GET') {
         const url = new URL(request.url);
-        const userId = url.searchParams.get('userId');
+        const roomId = url.searchParams.get('roomId');
 
-        if (!userId) {
+        if (!roomId) {
             return new Response(JSON.stringify({
                 success: false,
-                message: 'userId manquant'
+                message: 'roomId manquant'
             }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
 
-        const currentUserId = session.userId;
-        const key1 = `msg:${currentUserId}:${userId}`;
-        const key2 = `msg:${userId}:${currentUserId}`;
-
-        const [messages1, messages2] = await Promise.all([
-            redis.lrange(key1, 0, -1),
-            redis.lrange(key2, 0, -1)
-        ]);
-
-        const allMessages = [
-            ...(messages1 || []).map(m => ({ ...m, sent: true })),
-            ...(messages2 || []).map(m => ({ ...m, sent: false }))
-        ].sort((a, b) => a.timestamp - b.timestamp);
+        const key = `room:${roomId}:messages`;
+        const messages = await redis.lrange(key, 0, -1);
 
         return new Response(JSON.stringify({
             success: true,
-            messages: allMessages
+            messages: messages || []
         }), {
             headers: { 'Content-Type': 'application/json' }
         });
     }
 
     if (method === 'POST') {
-        const { userId, content } = await request.json();
+        const { roomId, content } = await request.json();
 
-        if (!userId || !content) {
+        if (!roomId || !content) {
             return new Response(JSON.stringify({
                 success: false,
                 message: 'Données manquantes'
@@ -74,10 +63,12 @@ export default async function handler(request) {
             });
         }
 
-        const currentUserId = session.userId;
-        const key = `msg:${currentUserId}:${userId}`;
+        const key = `room:${roomId}:messages`;
 
         const message = {
+            senderId: session.userId,
+            senderUsername: session.username,
+            roomId,
             content,
             timestamp: Date.now()
         };

@@ -58,20 +58,10 @@ const RegisterPage = () => {
       return;
     }
 
-    console.log('📤 Envoi des données d\'inscription:', {
-      username: formData.username,
-      email: formData.email,
-    });
-
     const result = await register(formData.username, formData.email, formData.password);
 
-    console.log('📥 Résultat de l\'inscription:', result);
-
     if (result.success) {
-      console.log('✅ Inscription réussie, redirection vers /messages');
       navigate('/messages');
-    } else {
-      console.error('❌ Inscription échouée:', result.error);
     }
   };
 
