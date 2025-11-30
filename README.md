@@ -9,27 +9,33 @@
 ## 📸 Captures d'écran de l'application
 
 ### Page d'inscription
-![Inscription](doc/demo.gif)
+<img width="1919" height="1032" alt="Capture d&#39;écran 2025-11-30 160845" src="https://github.com/user-attachments/assets/f0f83414-9046-496f-9dd1-52e03b913d7b" />
 *Interface d'inscription permettant la création d'un nouveau compte utilisateur avec validation des champs email, nom d'utilisateur et mot de passe.*
 
 ### Page de connexion
-![Connexion](doc/demo.gif)
+<img width="1919" height="956" alt="image" src="https://github.com/user-attachments/assets/3f06a300-4135-411f-931e-47d94ee721d6" />
 *Écran de connexion sécurisé avec gestion des sessions utilisateur et redirection automatique vers le dashboard.*
 
 ### Dashboard de messagerie
-![Dashboard - Vue d'ensemble](doc/demo.gif)
+<img width="1905" height="1033" alt="Capture d&#39;écran 2025-11-30 160855" src="https://github.com/user-attachments/assets/e17a89c0-7a05-4b74-8a77-dc69a4e5d3a9" />
 *Interface principale de messagerie offrant une vue complète des conversations et des salons de discussion.*
 
-![Dashboard - Liste des utilisateurs](doc/demo.gif)
+<img width="456" height="952" alt="image" src="https://github.com/user-attachments/assets/309aa048-5e5f-4081-8641-ff364e03c3ce" />
 *Panneau latéral affichant tous les utilisateurs connectés avec indicateur de messages non lus.*
 
-![Dashboard - Conversation privée](doc/demo.gif)
+<img width="1913" height="1030" alt="Capture d&#39;écran 2025-11-30 160951" src="https://github.com/user-attachments/assets/ce97f25b-7c05-4cc3-bf76-ef41e5357045" />
+
+<img width="1915" height="963" alt="Capture d&#39;écran 2025-11-30 161126" src="https://github.com/user-attachments/assets/55604f8c-6e62-40b4-85d8-6ddfc911e39b" />
+
 *Fenêtre de chat privé permettant l'échange de messages en temps réel entre deux utilisateurs.*
 
-![Dashboard - Salons de discussion](doc/demo.gif)
+<img width="1919" height="1027" alt="Capture d&#39;écran 2025-11-30 160909" src="https://github.com/user-attachments/assets/39361c91-5699-460e-bf40-73ec5e78e52f" />
 *Accès aux différents salons thématiques (General, News, Random) pour des discussions de groupe.*
 
-![Dashboard - Messages dans un salon](doc/demo.gif)
+<img width="1919" height="1027" alt="Capture d&#39;écran 2025-11-30 160909" src="https://github.com/user-attachments/assets/cafee418-a982-4e2b-a90d-ff0ac15b6b75" />
+
+<img width="1919" height="1025" alt="Capture d&#39;écran 2025-11-30 160929" src="https://github.com/user-attachments/assets/b9540001-c28f-4722-950f-4fdeb774a6a0" />
+
 *Interface de messagerie de groupe avec historique des messages et identification des auteurs.*
 
 ---
