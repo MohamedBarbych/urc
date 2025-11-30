@@ -4,8 +4,14 @@
 **Formation:** Master DOSI - Université de Bretagne Occidentale  
 **Année universitaire:** 2024-2025
 
-https://urc-tp.netlify.app/login
 ---
+## Déploiement :
+
+https://urc-tp.netlify.app/login
+
+<img width="1902" height="597" alt="image" src="https://github.com/user-attachments/assets/992c1ed6-1403-4bd2-96fa-b3cbf549cd77" />
+
+<img width="1919" height="776" alt="image" src="https://github.com/user-attachments/assets/e03cc6e1-31f5-49e6-bb2b-6b8374ce8428" />
 
 ## 📸 Captures d'écran de l'application
 
