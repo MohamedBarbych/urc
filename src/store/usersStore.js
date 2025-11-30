@@ -68,7 +68,7 @@ export const useUsersStore = create((set, get) => ({
     fetchMessages: async (userId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/messages?userId=${userId}`, {
+            const response = await fetch(`${API_URL}/api/messages?otherUserId=${userId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
