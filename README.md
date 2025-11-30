@@ -361,47 +361,11 @@ urc/
 # Démarrer l'application
 docker compose up -d
 
-# Voir les logs en temps réel
-docker logs -f urc2-web-1
-
 # Arrêter l'application
 docker compose down
 
-# Rebuild complet (après modifications du code)
-docker compose up --build -d
-
-# Accéder au shell du conteneur
-docker exec -it urc2-web-1 sh
 ```
 
-### Gestion de Git
-
-```bash
-# Sauvegarder les modifications
-git add -A
-git commit -m "Description des changements"
-
-# Pousser vers GitHub
-git push origin main
-```
-
----
-
-## 🐛 Dépannage
-
-### Le conteneur ne démarre pas
-```bash
-# Vérifier les logs
-docker logs urc2-web-1
-
-# Vérifier que le port 3000 n'est pas déjà utilisé
-netstat -ano | findstr :3000
-
-# Nettoyer et reconstruire
-docker compose down
-docker system prune -f
-docker compose up --build -d
-```
 
 ### Erreur 401 (Non autorisé)
 - Vérifier que le token est bien présent dans localStorage
