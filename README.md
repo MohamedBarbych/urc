@@ -5,13 +5,6 @@
 **Année universitaire:** 2024-2025
 
 ---
-## Déploiement :
-
-https://urc-tp.netlify.app/login
-
-<img width="1902" height="597" alt="image" src="https://github.com/user-attachments/assets/992c1ed6-1403-4bd2-96fa-b3cbf549cd77" />
-
-<img width="1919" height="776" alt="image" src="https://github.com/user-attachments/assets/e03cc6e1-31f5-49e6-bb2b-6b8374ce8428" />
 
 ## 📸 Captures d'écran de l'application
 
@@ -44,6 +37,15 @@ https://urc-tp.netlify.app/login
 <img width="1919" height="1025" alt="Capture d&#39;écran 2025-11-30 160929" src="https://github.com/user-attachments/assets/b9540001-c28f-4722-950f-4fdeb774a6a0" />
 
 *Interface de messagerie de groupe avec historique des messages et identification des auteurs.*
+
+---
+## Déploiement :
+
+https://urc-tp.netlify.app/login
+
+<img width="1902" height="597" alt="image" src="https://github.com/user-attachments/assets/992c1ed6-1403-4bd2-96fa-b3cbf549cd77" />
+
+<img width="1919" height="776" alt="image" src="https://github.com/user-attachments/assets/e03cc6e1-31f5-49e6-bb2b-6b8374ce8428" />
 
 ---
 
