@@ -34,16 +34,16 @@ app.post('/api/register', async (req, res) => {
     }
     const hash = crypto.createHash('sha256').update(username + password).digest('base64');
     await client.connect();
-    const { rowCount } = await client.sqlSELECT * FROM users WHERE username =  OR email = ;
-    if (rowCount > 0) {
+    const check = await client.sql`SELECT * FROM users WHERE username = ${username} OR email = ${email}`;
+    if (check.rowCount > 0) {
       await client.end();
       return res.status(409).json({ success: false, message: "Nom d'utilisateur ou email déjà utilisé" });
     }
     const externalId = crypto.randomUUID();
-    const { rows } = await client.sqlINSERT INTO users (username, email, password, external_id, last_login, created_on) VALUES (, , , , NOW(), NOW()) RETURNING user_id, username, email, external_id;
+    const result = await client.sql`INSERT INTO users (username, email, password, external_id, last_login, created_on) VALUES (${username}, ${email}, ${hash}, ${externalId}, NOW(), NOW()) RETURNING user_id, username, email, external_id`;
     await client.end();
     const token = crypto.randomUUID();
-    const user = { id: rows[0].user_id, username: rows[0].username, email: rows[0].email, externalId: rows[0].external_id };
+    const user = { id: result.rows[0].user_id, username: result.rows[0].username, email: result.rows[0].email, externalId: result.rows[0].external_id };
     await redis.set(token, user, { ex: 3600 });
     await redis.hset("users", { [user.id]: user });
     res.status(201).json({ success: true, token, user });
@@ -63,15 +63,15 @@ app.post('/api/login', async (req, res) => {
     }
     const hash = crypto.createHash('sha256').update(username + password).digest('base64');
     await client.connect();
-    const { rows, rowCount } = await client.sqlSELECT * FROM users WHERE username =  AND password = ;
-    if (rowCount !== 1) {
+    const result = await client.sql`SELECT * FROM users WHERE username = ${username} AND password = ${hash}`;
+    if (result.rowCount !== 1) {
       await client.end();
       return res.status(401).json({ success: false, message: "Identifiant ou mot de passe incorrect" });
     }
-    await client.sqlUPDATE users SET last_login = NOW() WHERE user_id = ;
+    await client.sql`UPDATE users SET last_login = NOW() WHERE user_id = ${result.rows[0].user_id}`;
     await client.end();
     const token = crypto.randomUUID();
-    const user = { id: rows[0].user_id, username: rows[0].username, email: rows[0].email, externalId: rows[0].external_id };
+    const user = { id: result.rows[0].user_id, username: result.rows[0].username, email: result.rows[0].email, externalId: result.rows[0].external_id };
     await redis.set(token, user, { ex: 86400 });
     await redis.hset("users", { [user.id]: user });
     res.json({ success: true, token, user });
@@ -96,9 +96,9 @@ app.get('/api/rooms', verifySession, async (req, res) => {
   const client = createClient();
   try {
     await client.connect();
-    const { rows } = await client.sqlSELECT room_id as id, name, description FROM rooms ORDER BY name;
+    const result = await client.sql`SELECT room_id as id, name, description FROM rooms ORDER BY name`;
     await client.end();
-    res.json({ success: true, rooms: rows });
+    res.json({ success: true, rooms: result.rows });
   } catch (error) {
     try { await client.end(); } catch {}
     res.status(500).json({ success: false, message: error.message });
@@ -109,8 +109,8 @@ app.get('/api/messages', verifySession, async (req, res) => {
   try {
     const { otherUserId } = req.query;
     if (!otherUserId) return res.status(400).json({ success: false, message: 'otherUserId requis' });
-    const key1 = msg::;
-    const key2 = msg::;
+    const key1 = `msg:${req.user.id}:${otherUserId}`;
+    const key2 = `msg:${otherUserId}:${req.user.id}`;
     const [msgs1, msgs2] = await Promise.all([redis.lrange(key1, 0, -1), redis.lrange(key2, 0, -1)]);
     const allMessages = [...(msgs1 || []), ...(msgs2 || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     res.json({ success: true, messages: allMessages });
@@ -124,7 +124,7 @@ app.post('/api/messages', verifySession, async (req, res) => {
     const { receiverId, content } = req.body;
     if (!receiverId || !content) return res.status(400).json({ success: false, message: 'receiverId et content requis' });
     const message = { senderId: req.user.id, senderUsername: req.user.username, receiverId, content, timestamp: new Date().toISOString() };
-    const key = msg::;
+    const key = `msg:${req.user.id}:${receiverId}`;
     await redis.rpush(key, message);
     await redis.expire(key, 604800);
     res.json({ success: true, message });
@@ -137,7 +137,7 @@ app.get('/api/room-messages', verifySession, async (req, res) => {
   try {
     const { roomId } = req.query;
     if (!roomId) return res.status(400).json({ success: false, message: 'roomId requis' });
-    const key = oom::messages;
+    const key = `room:${roomId}:messages`;
     const messages = await redis.lrange(key, 0, -1);
     res.json({ success: true, messages: messages || [] });
   } catch (error) {
@@ -150,7 +150,7 @@ app.post('/api/room-messages', verifySession, async (req, res) => {
     const { roomId, content } = req.body;
     if (!roomId || !content) return res.status(400).json({ success: false, message: 'roomId et content requis' });
     const message = { senderId: req.user.id, senderUsername: req.user.username, roomId, content, timestamp: new Date().toISOString() };
-    const key = oom::messages;
+    const key = `room:${roomId}:messages`;
     await redis.rpush(key, message);
     await redis.expire(key, 604800);
     res.json({ success: true, message });
@@ -163,7 +163,7 @@ app.use((req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')))
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log( Serveur démarré sur le port );
-  console.log(  - Frontend React : http://localhost:);
-  console.log(  - Backend API : http://localhost:/api/*);
+  console.log(`✓ Serveur démarré sur le port ${PORT}`);
+  console.log(`  - Frontend React : http://localhost:${PORT}`);
+  console.log(`  - Backend API : http://localhost:${PORT}/api/*`);
 });
